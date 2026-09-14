@@ -1,0 +1,4 @@
+[Boto]
+proxy = @SQUID_PROXY_HOST@
+proxy_port = @SQUID_PROXY_PORT@
+ca_certificates_file = @SQUID_CA_BUNDLE@

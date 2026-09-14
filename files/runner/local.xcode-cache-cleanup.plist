@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Installed into the runner's ~/Library/LaunchAgents by remote/70-maintenance.sh. -->
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>local.xcode-cache-cleanup</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>@RUNNER_HOME@/bin/xcode-cache-cleanup.sh</string>
+    </array>
+    <key>UserName</key>
+    <string>@RUNNER_USER@</string>
+    <key>WorkingDirectory</key>
+    <string>@RUNNER_HOME@</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>RUNNERS_ROOT</key>
+      <string>@RUNNERS_ROOT@</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+      <key>Weekday</key>
+      <integer>@XCODE_CACHE_CLEANUP_WEEKDAY@</integer>
+      <key>Hour</key>
+      <integer>@XCODE_CACHE_CLEANUP_HOUR@</integer>
+      <key>Minute</key>
+      <integer>@XCODE_CACHE_CLEANUP_MINUTE@</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>@RUNNER_HOME@/Library/Logs/xcode-cache-cleanup.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>@RUNNER_HOME@/Library/Logs/xcode-cache-cleanup.out.log</string>
+  </dict>
+</plist>

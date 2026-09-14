@@ -1,0 +1,12 @@
+# Secrets pulled from the runner by backup.sh (and its rotated copies)
+/secrets/
+/secrets.*/
+
+# Machine-specific overrides and anything that could hold secrets
+config.local.env
+*.xip
+*.p12
+*.key
+.env
+
+.DS_Store

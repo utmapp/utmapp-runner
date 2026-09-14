@@ -1,0 +1,37 @@
+# Homebrew packages for the runner, installed by remote/20-homebrew.sh with
+# "brew bundle --no-upgrade".
+#
+# squid is not listed: squid-patch/deploy.sh builds the patched formula from a
+# local tap and pins it.
+
+tap "homebrew/services"
+
+# UTM sysroot build dependencies. Keep in sync with the "brew install" lines
+# in UTM's .github/workflows/build.yml.
+brew "autoconf"
+brew "automake"
+brew "bison"
+brew "cmake"
+brew "gettext"
+brew "glib"
+brew "libclc"
+brew "libgpg-error"
+brew "libtool"
+brew "libxcb"
+brew "libxrandr"
+brew "llvm"
+brew "mesa"
+brew "meson"
+brew "nasm"
+brew "pkgconf"
+brew "spirv-llvm-translator"
+brew "zstd"
+
+# python3 for the --user pip packages in config.env (RUNNER_PIP_PACKAGES).
+brew "python"
+
+# Used by remote/50-xcode.sh to expand Xcode .xip archives quickly.
+brew "unxip"
+
+# Disk usage browser, handy when the cache or DerivedData fills the disk.
+brew "ncdu"

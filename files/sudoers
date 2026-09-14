@@ -1,0 +1,7 @@
+# Installed as /etc/sudoers.d/runner by remote/00-sudoers.sh.
+#
+# The admin account needs passwordless sudo so the setup can run unattended.
+# The runner may only switch Xcode: UTM's build.yml runs
+# "sudo xcode-select -s $HOST_XCODE_PATH" when the selected Xcode differs.
+@ADMIN_USER@ ALL=(ALL) NOPASSWD: ALL
+@RUNNER_USER@ ALL=(ALL) NOPASSWD: /usr/bin/xcode-select
