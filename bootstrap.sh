@@ -20,10 +20,14 @@
 # Usage: ./bootstrap.sh [options] [step ...]
 #
 #   --xcode-xip PATH        upload and install this Xcode .xip
+#   --xcode-xip-on-runner PATH
+#                           install an Xcode .xip that is already on the runner
+#                           (absolute, or relative to the admin user's home)
 #   --reboot                reboot without asking if the runner session is missing
 #   --no-reboot             never reboot
 #   --reconfigure-runners   re-register runners that are already registered
 #   --no-restore            ignore the backup in SECRETS_DIR (see backup.sh)
+#   --skip STEP[,STEP]      run every selected step except these (e.g. --skip clt)
 #   --list                  list the steps and exit
 #   -h, --help              show this help
 #
@@ -34,14 +38,15 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 . "$ROOT/lib/common.sh"
 . "$ROOT/lib/local.sh"
 
-STEPS="keys sudo system homebrew squid user runners maintenance xcode activate verify"
+STEPS="keys sudo system clt homebrew squid user runners maintenance xcode activate verify"
 
 describe() {
     case "$1" in
         keys)        echo "make sure key-based SSH login works (installs your public key)" ;;
         sudo)        echo "passwordless sudo for the admin account" ;;
         system)      echo "power, Spotlight, updates, screen sharing, sshd" ;;
-        homebrew)    echo "Homebrew, Command Line Tools and files/Brewfile" ;;
+        clt)         echo "install/update the Command Line Tools (slow; reinstalls every time)" ;;
+        homebrew)    echo "Homebrew and files/Brewfile" ;;
         squid)       echo "patched Squid proxy from the squid-patch submodule" ;;
         user)        echo "runner account, automatic login, dotfiles, pip and gem packages" ;;
         runners)     echo "download, register and install the GitHub Actions runners" ;;
@@ -57,18 +62,24 @@ usage() { awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 {exit}' "$0"; }
 # ---------------------------------------------------------------- arguments --
 
 opt_xip=""
+opt_xip_on_runner=""
 opt_reboot=""
 opt_reconfigure=0
 opt_restore=1
 selected=""
+skipped=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --xcode-xip)           [ $# -ge 2 ] || die "--xcode-xip needs a path"; opt_xip="$2"; shift ;;
         --xcode-xip=*)         opt_xip="${1#*=}" ;;
+        --xcode-xip-on-runner) [ $# -ge 2 ] || die "--xcode-xip-on-runner needs a path"; opt_xip_on_runner="$2"; shift ;;
+        --xcode-xip-on-runner=*) opt_xip_on_runner="${1#*=}" ;;
         --reboot)              opt_reboot=yes ;;
         --no-reboot)           opt_reboot=no ;;
         --reconfigure-runners) opt_reconfigure=1 ;;
         --no-restore)          opt_restore=0 ;;
+        --skip)                [ $# -ge 2 ] || die "--skip needs a step"; skipped="$skipped ${2//,/ }"; shift ;;
+        --skip=*)              v="${1#*=}"; skipped="$skipped ${v//,/ }" ;;
         --list)                for s in $STEPS; do printf '  %-12s %s\n' "$s" "$(describe "$s")"; done; exit 0 ;;
         -h|--help)             usage; exit 0 ;;
         -*)                    die "unknown option: $1 (try --help)" ;;
@@ -79,13 +90,20 @@ while [ $# -gt 0 ]; do
     shift
 done
 [ -n "$selected" ] || selected="$STEPS"
+for s in $skipped; do
+    case " $STEPS " in *" $s "*) ;; *) die "unknown step for --skip: $s (try --list)" ;; esac
+done
 selected=" $selected "
+for s in $skipped; do selected="${selected/ $s / }"; done
 wants() { case "$selected" in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 # ------------------------------------------------------------------- config --
 
 load_config
 [ -z "$opt_xip" ] || XCODE_XIP="$opt_xip"
+[ -z "$opt_xip_on_runner" ] || XCODE_XIP_ON_RUNNER="$opt_xip_on_runner"
+[ -z "$opt_xip" ] || [ -z "$opt_xip_on_runner" ] \
+    || die "--xcode-xip and --xcode-xip-on-runner are mutually exclusive"
 
 [ -f "$ROOT/squid-patch/deploy.sh" ] \
     || die "squid-patch submodule is missing; run: git submodule update --init"
@@ -117,26 +135,17 @@ prompt_secret() {  # prompt_secret <prompt> <confirm 0|1> -> stdout
 
 # backup_autologin_password <user>: the password stored in the backup's
 # /etc/kcpassword, if the backed-up machine logged in automatically as <user>.
-# kcpassword is the password XORed with a fixed key and zero-padded.
 backup_autologin_password() {
     local dir="$SECRETS_PATH/autologin"
     [ "$restore" = 1 ] && [ -f "$dir/kcpassword" ] && [ "$(cat "$dir/user" 2>/dev/null)" = "$1" ] || return 0
-    perl -e '
-        open my $f, "<:raw", $ARGV[0] or die "$ARGV[0]: $!\n";
-        local $/; my $data = <$f>;
-        my @key = (0x7D, 0x89, 0x52, 0x23, 0xD2, 0xBC, 0xDD, 0xEA, 0xA3, 0xB9, 0x1F);
-        for my $i (0 .. length($data) - 1) {
-            my $c = ord(substr($data, $i, 1)) ^ $key[$i % @key];
-            last if $c == 0;
-            print chr($c);
-        }' "$dir/kcpassword"
+    kcpassword_decode < "$dir/kcpassword"
 }
 
 runner_password=""
 autologin_password=""
 collect_user_secrets() {
     local probe user_exists autologin_ok
-    probe="$(rssh "id -u $(printf '%q' "$RUNNER_USER") >/dev/null 2>&1 && echo user-exists; sudo sysadminctl -autologin status 2>&1 | grep -q 'Automatic login user: '$(printf '%q' "$AUTOLOGIN_USER")'\$' && echo autologin-ok; true")"
+    probe="$(run_remote probe-user.sh </dev/null)"
     case "$probe" in *user-exists*) user_exists=1 ;; *) user_exists=0 ;; esac
     case "$probe" in *autologin-ok*) autologin_ok=1 ;; *) autologin_ok=0 ;; esac
     [ -n "$AUTOLOGIN_USER" ] || autologin_ok=1
@@ -299,6 +308,11 @@ require_sudo
 if wants user; then collect_user_secrets; fi
 if wants runners && runners_need_token; then collect_runner_token; fi
 if wants activate; then decide_reboot; fi
+# A missing .xip on the runner should fail now, not after an hour of other steps.
+if wants xcode && [ -z "$XCODE_XIP" ] && [ -n "$XCODE_XIP_ON_RUNNER" ]; then
+    rssh "cd ~ && test -f $(printf '%q' "${XCODE_XIP_ON_RUNNER/#\~\//}")" \
+        || die "Xcode .xip not found on the runner: $XCODE_XIP_ON_RUNNER"
+fi
 
 for s in $STEPS; do
     wants "$s" || continue
@@ -311,6 +325,7 @@ for s in $STEPS; do
             else
                 run_remote 10-system.sh </dev/null
             fi ;;
+        clt)         run_remote 15-command-line-tools.sh </dev/null ;;
         homebrew)    run_remote 20-homebrew.sh </dev/null ;;
         squid)       run_remote 30-squid.sh </dev/null ;;
         user)        printf '%s\n%s\n' "$runner_password" "$autologin_password" | run_remote 40-runner-user.sh ;;
@@ -330,6 +345,8 @@ for s in $STEPS; do
                         "$XCODE_XIP" "$TARGET:$(printf '%q' "$remote_xip")"
                 fi
                 run_remote 50-xcode.sh "XCODE_XIP_REMOTE=$remote_xip" </dev/null
+            elif [ -n "$XCODE_XIP_ON_RUNNER" ]; then
+                run_remote 50-xcode.sh "XCODE_XIP_REMOTE=$XCODE_XIP_ON_RUNNER" </dev/null
             else
                 run_remote 50-xcode.sh </dev/null
             fi ;;

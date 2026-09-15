@@ -42,8 +42,7 @@ step "Automatic login"
 if [ -z "$AUTOLOGIN_USER" ]; then
     sudo sysadminctl -autologin off >/dev/null 2>&1 || true
     ok "disabled"
-elif sudo sysadminctl -autologin status 2>&1 | grep -q "Automatic login user: $AUTOLOGIN_USER\$" \
-        && [ -z "$autologin_password" ]; then
+elif autologin_works "$AUTOLOGIN_USER" && [ -z "$autologin_password" ]; then
     ok "already $AUTOLOGIN_USER"
 else
     [ -n "$autologin_password" ] || die "a password is needed to enable automatic login for $AUTOLOGIN_USER"
@@ -51,8 +50,14 @@ else
     dscl . -authonly "$AUTOLOGIN_USER" "$autologin_password" >/dev/null 2>&1 \
         || die "the password for $AUTOLOGIN_USER is incorrect"
     sudo sysadminctl -autologin set -userName "$AUTOLOGIN_USER" -password "$autologin_password" >/dev/null 2>&1 || true
-    sudo sysadminctl -autologin status 2>&1 | grep -q "Automatic login user: $AUTOLOGIN_USER\$" \
-        || die "could not enable automatic login for $AUTOLOGIN_USER"
+    # sysadminctl does not reliably write /etc/kcpassword (on macOS 27 it left
+    # the previous user's password there), so write both settings ourselves.
+    kc="$(mktemp)"
+    printf '%s' "$autologin_password" | kcpassword_encode > "$kc"
+    sudo install -m 600 -o root -g wheel "$kc" /etc/kcpassword
+    rm -f "$kc"
+    sudo defaults write /Library/Preferences/com.apple.loginwindow autoLoginUser "$AUTOLOGIN_USER"
+    autologin_works "$AUTOLOGIN_USER" || die "automatic login for $AUTOLOGIN_USER still does not verify"
     ok "$AUTOLOGIN_USER (takes effect at the next boot)"
 fi
 

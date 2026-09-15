@@ -81,3 +81,14 @@ read_secret() {
     IFS= read -r line || true
     printf '%s' "$line"
 }
+
+# autologin_works <user>: loginwindow is set to log <user> in automatically AND
+# /etc/kcpassword holds that user's current password. sysadminctl can set the
+# first without the second (seen on macOS 27), which leaves the machine at the
+# login screen after a reboot.
+autologin_works() {
+    local user="$1"
+    [ "$(sudo defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser 2>/dev/null)" = "$user" ] \
+        && sudo test -f /etc/kcpassword \
+        && dscl . -authonly "$user" "$(sudo cat /etc/kcpassword | kcpassword_decode)" >/dev/null 2>&1
+}

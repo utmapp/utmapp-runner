@@ -27,7 +27,7 @@ can't use.
 
 | Label | Domain | Runs as | Defined in |
 | --- | --- | --- | --- |
-| `org.squid-cache.squid` | system (LaunchDaemon) | `administrator` | `squid-patch/deploy.sh --system`, from Homebrew's generated `homebrew.mxcl.squid.plist` |
+| `org.squid-cache.squid` | system (LaunchDaemon) | `administrator` | `squid-patch/deploy.sh --system`, from the launchd plist Homebrew generates (`sh.brew.squid.plist`; `homebrew.mxcl.squid.plist` before Homebrew 7) |
 | `org.squid-cache.logrotate` | system (LaunchDaemon) | `administrator` | `squid-patch/org.squid-cache.logrotate.plist` (daily 04:15, `squid -k rotate`) |
 | `actions.runner.utmapp.macstadium-N` | `gui/<runner uid>` (LaunchAgent) | `runner` | the runner's `svc.sh install` → `~runner/Library/LaunchAgents/` |
 | `local.xcode-cache-cleanup` | `gui/<runner uid>` (LaunchAgent) | `runner` | `files/runner/local.xcode-cache-cleanup.plist` (Sundays 03:15) |
@@ -114,8 +114,11 @@ not in it: `squid-patch` builds and pins its own formula.
 - `build.yml` uses `vars.HOST_XCODE_PATH`; keep that variable pointing at the installed app.
 
 Apple has no unattended Xcode download (developer.apple.com needs an Apple ID
-with 2FA), so you download the `.xip` and `bootstrap.sh` uploads it. It can
-also fetch one from `XCODE_XIP_URL`, for example a pre-signed bucket URL.
+with 2FA), so you download the `.xip` yourself. `bootstrap.sh` uploads it
+(`--xcode-xip`), uses one already on the runner (`--xcode-xip-on-runner` /
+`XCODE_XIP_ON_RUNNER`), or fetches one from `XCODE_XIP_URL`, for example a
+pre-signed bucket URL. With `XCODE_DELETE_XIP=1` (the default) the `.xip` is
+deleted once the whole xcode step has succeeded.
 
 ## Machine settings
 

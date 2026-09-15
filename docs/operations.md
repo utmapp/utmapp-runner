@@ -36,8 +36,14 @@ If a backup must not be used (e.g. you want a fresh CA), run
 ```sh
 tools/latest-xcode.sh                               # newest one this macOS supports
 ./bootstrap.sh --xcode-xip ~/Downloads/Xcode_26.3_Apple_silicon.xip xcode verify
+
+# or, if the .xip is already on the runner (path relative to administrator's home):
+./bootstrap.sh --xcode-xip-on-runner Downloads/Xcode_26.3_Apple_silicon.xip xcode verify
 ```
 
+Once the step succeeds, the `.xip` is deleted from the runner, whether it was
+uploaded, downloaded or already there (set `XCODE_DELETE_XIP=0` to keep it). If
+the step fails, the `.xip` stays, so you can re-run without copying it again.
 The old Xcode is kept. Afterwards:
 
 1. Set the Actions variable `HOST_XCODE_PATH` to the new app, in the `utmapp`
@@ -85,6 +91,25 @@ squid -k parse                                              # check the config
 tail -f /opt/homebrew/var/logs/access.log
 awk '{print $4}' /opt/homebrew/var/logs/access.log | sort | uniq -c | sort -rn | head
 ```
+
+## After a macOS upgrade
+
+A macOS upgrade leaves the Command Line Tools at the old version, and Homebrew
+refuses to build from source with them ("Your Command Line Tools are too
+outdated"). Building the patched Squid is exactly that. The `clt` step
+installs the newest Command Line Tools that `softwareupdate` offers, so run:
+
+```sh
+./bootstrap.sh clt verify
+```
+
+`softwareupdate` keeps offering the tools even when they are current, so `clt`
+reinstalls them on every run, which takes several minutes. When they are
+current, leave it out of full runs: `./bootstrap.sh --skip clt`.
+
+Because the Actions runners are LaunchAgents of the auto-logged-in `runner`
+account, they come back by themselves after the upgrade's reboot, as long as
+automatic login is `runner`.
 
 ## Adding, removing or re-registering runners
 

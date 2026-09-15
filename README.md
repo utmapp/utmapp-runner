@@ -104,6 +104,7 @@ pass `--reboot`/`--no-reboot`.
 ./bootstrap.sh --list                      # what the steps are
 ./bootstrap.sh verify                      # read-only health check of a live runner
 ./bootstrap.sh --xcode-xip X.xip xcode     # install another Xcode
+./bootstrap.sh --xcode-xip-on-runner Downloads/X.xip xcode   # ... from an .xip already on the runner
 ./bootstrap.sh squid verify                # re-deploy squid-patch changes
 ```
 
@@ -114,7 +115,8 @@ Steps run in this order, and each one is safe to re-run:
 | `keys` | *(local)* | makes sure key-based SSH works; always runs |
 | `sudo` | `remote/00-sudoers.sh` | `/etc/sudoers.d/runner` (passwordless admin, `runner` may run `xcode-select`) |
 | `system` | `remote/10-system.sh` | power, Spotlight, software update, screen sharing, sshd hardening |
-| `homebrew` | `remote/20-homebrew.sh` | Homebrew, Command Line Tools, `files/Brewfile` |
+| `clt` | `remote/15-command-line-tools.sh` | installs the newest Command Line Tools; slow, as it reinstalls every time, so skip it with `--skip clt` when they're current |
+| `homebrew` | `remote/20-homebrew.sh` | Homebrew, `files/Brewfile` |
 | `squid` | `remote/30-squid.sh` | `squid-patch/deploy.sh --system` |
 | `user` | `remote/40-runner-user.sh` | `runner` account, automatic login, dotfiles, git config, pip and gem packages |
 | `runners` | `remote/60-actions-runners.sh` | downloads (checksum-verified) and registers the runners; `.env`, `.path`, LaunchAgents |

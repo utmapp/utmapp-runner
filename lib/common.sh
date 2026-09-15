@@ -43,3 +43,26 @@ runner_backup_matches() {
     [ "$(runner_json "$dir/.runner" agentName)" = "$2" ] \
         && [ "$(runner_json "$dir/.runner" gitHubUrl)" = "${GITHUB_URL%/}" ]
 }
+
+# /etc/kcpassword, where macOS keeps the automatic login password: the password
+# zero-padded to the next multiple of 12 bytes (always at least one zero) and
+# XORed with a fixed key. Both functions read stdin and write stdout, so the
+# password never appears on a command line.
+kcpassword_encode() {
+    perl -e '
+        local $/; my $p = <STDIN>;
+        my @key = (0x7D, 0x89, 0x52, 0x23, 0xD2, 0xBC, 0xDD, 0xEA, 0xA3, 0xB9, 0x1F);
+        $p .= "\0" x (12 - length($p) % 12);
+        binmode STDOUT;
+        print join "", map { chr(ord(substr($p, $_, 1)) ^ $key[$_ % @key]) } 0 .. length($p) - 1;'
+}
+kcpassword_decode() {
+    perl -e '
+        binmode STDIN; local $/; my $d = <STDIN>;
+        my @key = (0x7D, 0x89, 0x52, 0x23, 0xD2, 0xBC, 0xDD, 0xEA, 0xA3, 0xB9, 0x1F);
+        for my $i (0 .. length($d) - 1) {
+            my $c = ord(substr($d, $i, 1)) ^ $key[$i % @key];
+            last if $c == 0;
+            print chr($c);
+        }'
+}

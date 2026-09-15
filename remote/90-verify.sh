@@ -30,9 +30,9 @@ fi
 
 step "Squid"
 check "squid LaunchDaemon running" sh -c "sudo launchctl print system/org.squid-cache.squid | grep -q 'state = running'"
-check "no competing squid LaunchAgent" sh -c "! test -f '$HOME/Library/LaunchAgents/homebrew.mxcl.squid.plist'"
+check "no competing squid LaunchAgent" sh -c "! test -f '$HOME/Library/LaunchAgents/homebrew.mxcl.squid.plist' && ! test -f '$HOME/Library/LaunchAgents/sh.brew.squid.plist'"
 check "squid pinned in Homebrew" sh -c "brew list --pinned | grep -qx squid"
-check "squid binary carries the patch" sh -c "strings '$HOMEBREW_PREFIX/opt/squid/sbin/squid' | grep -q x-ms-range"
+check "squid binary carries the patch" env LC_ALL=C grep -a -q x-ms-range "$HOMEBREW_PREFIX/opt/squid/sbin/squid"
 check "proxy listening on $SQUID_PROXY_HOST:$SQUID_PROXY_PORT" nc -z "$SQUID_PROXY_HOST" "$SQUID_PROXY_PORT"
 check "bumped HTTPS through the proxy (CA bundle)" \
     curl -fsS -o /dev/null --max-time 30 --proxy "http://$SQUID_PROXY_HOST:$SQUID_PROXY_PORT" --cacert "$SQUID_CA_BUNDLE" https://www.apple.com/
@@ -54,7 +54,7 @@ xcrun simctl runtime list 2>/dev/null | grep -E '^(iOS|xrOS|visionOS|tvOS|watchO
 step "Runner account"
 check "$RUNNER_USER exists" id "$RUNNER_USER"
 if [ -n "$AUTOLOGIN_USER" ]; then
-    check "automatic login is $AUTOLOGIN_USER" sh -c "sudo sysadminctl -autologin status 2>&1 | grep -q 'Automatic login user: $AUTOLOGIN_USER\$'"
+    check "automatic login is $AUTOLOGIN_USER (with its current password)" autologin_works "$AUTOLOGIN_USER"
 fi
 check "$RUNNER_USER has a GUI session" sudo launchctl print "gui/$RUNNER_UID"
 for m in $RUNNER_PIP_PACKAGES; do

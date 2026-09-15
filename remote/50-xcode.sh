@@ -3,9 +3,13 @@
 # Xcode from a .xip (Apple offers no unattended download), then license,
 # first-launch packages, simulator runtimes and extra components.
 #
-# The .xip comes from XCODE_XIP_REMOTE (a path on this machine, set by
-# bootstrap.sh after uploading --xcode-xip) or is downloaded from XCODE_XIP_URL.
-# With neither, the already-installed Xcode is (re)configured.
+# The .xip comes from XCODE_XIP_REMOTE, a path on this machine: either where
+# bootstrap.sh uploaded --xcode-xip, or an .xip that was already here
+# (XCODE_XIP_ON_RUNNER / --xcode-xip-on-runner). Otherwise it is downloaded from
+# XCODE_XIP_URL. With none of these, the installed Xcode is (re)configured.
+#
+# With XCODE_DELETE_XIP, the .xip is deleted only after the whole step has
+# succeeded, so a failed run can be retried without copying it again.
 
 . "$(dirname "$0")/../lib/remote.sh"
 eval "$("$HOMEBREW_PREFIX/bin/brew" shellenv)"
@@ -27,6 +31,11 @@ plist_get() { defaults read "$1" "$2" 2>/dev/null; }
 
 step "Xcode"
 xip="${XCODE_XIP_REMOTE:-}"
+case "$xip" in
+    "~/"*) xip="$HOME/${xip#"~/"}" ;;
+    ""|/*) ;;
+    *) xip="$HOME/$xip" ;;
+esac
 if [ -z "$xip" ] && [ -n "$XCODE_XIP_URL" ]; then
     mkdir -p "$HOME/Downloads"
     xip="$HOME/Downloads/$(basename "${XCODE_XIP_URL%%\?*}")"
@@ -82,10 +91,6 @@ if [ -n "$xip" ]; then
     fi
     rm -rf "$work"
     trap - EXIT
-    if is_true "$XCODE_DELETE_XIP"; then
-        rm -f "$xip"
-        ok "deleted $(basename "$xip")"
-    fi
 else
     current="$(xcode-select -p 2>/dev/null || true)"
     case "$current" in
@@ -145,6 +150,11 @@ for component in $XCODE_COMPONENTS; do
         xcodebuild -downloadComponent "$component"
     fi
 done
+
+if [ -n "$xip" ] && is_true "$XCODE_DELETE_XIP"; then
+    rm -f "$xip" 2>/dev/null || sudo rm -f "$xip"
+    ok "Xcode installed; deleted $xip"
+fi
 
 say "UTM's build.yml uses the Actions variable HOST_XCODE_PATH."
 say "Make sure it is set to: $dest"

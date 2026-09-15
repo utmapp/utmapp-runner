@@ -14,7 +14,7 @@ step "Squid"
 
 # Service definitions left by earlier hand-made installs. deploy.sh --system
 # replaces them with org.squid-cache.* LaunchDaemons.
-for label in com.turing.squid-logrotate homebrew.mxcl.squid; do
+for label in com.turing.squid-logrotate homebrew.mxcl.squid sh.brew.squid; do
     plist="$HOME/Library/LaunchAgents/$label.plist"
     [ -f "$plist" ] || continue
     launchctl bootout "gui/$(id -u)/$label" 2>/dev/null \
