@@ -49,7 +49,7 @@ Everything about the patch and `squid.conf` is documented in
 | `/opt/homebrew/etc/squid/squid-self-signed.{key,crt,pem}` | SSL-bump CA, generated on first deploy; **never leaves the machine** |
 | `/opt/homebrew/etc/squid/ca-bundle.pem` | Homebrew's public roots plus the CA |
 | `/opt/homebrew/etc/squid/github_store_id_helper.py` | store ID helper; runs under `/usr/bin/python3`, so the Command Line Tools or Xcode must be installed |
-| `/opt/homebrew/var/cache/squid` | the cache (100 GB) |
+| `/opt/homebrew/var/cache/squid` | the cache (50 GB) |
 | `/opt/homebrew/var/logs/{access,cache}.log` | logs |
 | `/opt/homebrew/Library/Taps/osy/homebrew-local/Formula/squid.rb` | the patched formula, pinned |
 
