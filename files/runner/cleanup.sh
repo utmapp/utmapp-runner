@@ -1,7 +1,8 @@
 #!/bin/sh
 #
-# ACTIONS_RUNNER_HOOK_JOB_STARTED hook (see runner.env): start every job with an
-# empty workspace, since self-hosted runners keep the previous job's checkout.
+# ACTIONS_RUNNER_HOOK_JOB_STARTED and _COMPLETED hook (see runner.env): empty the
+# workspace when a job finishes, so idle runners don't hold a checkout on disk,
+# and again when one starts, in case the previous job died before its hook ran.
 
 if [ -d "$GITHUB_WORKSPACE" ]; then
     echo "Cleaning up workspace..."

@@ -64,7 +64,7 @@ re-image generates a new CA. The runners find it through the paths in their
 | `~runner/actions/runner-N/` | runner N (`config.sh --unattended --replace`, work dir `_work`) |
 | `~runner/actions/runner-N/.env` | `files/runner/runner.env` (below) |
 | `~runner/actions/runner-N/.path` | `PATH` for the service: Homebrew first, then the system paths |
-| `~runner/actions/cleanup.sh` | `ACTIONS_RUNNER_HOOK_JOB_STARTED`: empties `$GITHUB_WORKSPACE` before each job |
+| `~runner/actions/cleanup.sh` | `ACTIONS_RUNNER_HOOK_JOB_STARTED` / `_COMPLETED`: empties `$GITHUB_WORKSPACE` before and after each job |
 | `~runner/Library/Logs/actions.runner.*/` | service stdout/stderr |
 
 Runners are registered to `GITHUB_URL` (`https://github.com/utmapp`) in
@@ -82,7 +82,8 @@ SSL_CERT_FILE                = ca-bundle.pem           (these three *replace* th
 REQUESTS_CA_BUNDLE           = ca-bundle.pem            bundle, so they need the public
 CURL_CA_BUNDLE               = ca-bundle.pem            roots too; also covers pip)
 BOTO_CONFIG, NO_AUTH_BOTO_CONFIG = ~runner/.boto       (gsutil / depot_tools)
-ACTIONS_RUNNER_HOOK_JOB_STARTED  = ~runner/actions/cleanup.sh
+ACTIONS_RUNNER_HOOK_JOB_STARTED    = ~runner/actions/cleanup.sh
+ACTIONS_RUNNER_HOOK_JOB_COMPLETED  = ~runner/actions/cleanup.sh
 ```
 
 ## Runner account environment
