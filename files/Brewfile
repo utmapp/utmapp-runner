@@ -2,9 +2,8 @@
 # "brew bundle --no-upgrade".
 #
 # squid is not listed: squid-patch/deploy.sh builds the patched formula from a
-# local tap and pins it.
-
-tap "homebrew/services"
+# local tap and pins it. "brew services" (used by squid-patch/deploy.sh) is
+# built into Homebrew and needs no tap.
 
 # UTM sysroot build dependencies. Keep in sync with the "brew install" lines
 # in UTM's .github/workflows/build.yml.
