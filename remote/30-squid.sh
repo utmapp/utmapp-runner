@@ -68,4 +68,19 @@ bash "$SQUID_SRC/deploy.sh" "${args[@]}"
 
 grep -qE "^http_port ${SQUID_PROXY_HOST//./\\.}:${SQUID_PROXY_PORT}([[:space:]]|$)" "$HOMEBREW_PREFIX/etc/squid.conf" \
     || warn "squid.conf does not listen on $SQUID_PROXY_HOST:$SQUID_PROXY_PORT; fix SQUID_PROXY_* in config.env"
+
+# The Actions runner (.NET), URLSession, SwiftPM and xcodebuild ignore
+# SSL_CERT_FILE and validate against the keychain, so the CA must be a trusted
+# root there or every bumped host fails with UntrustedRoot. macOS asks for
+# confirmation on screen before adding a trusted root, and on macOS 27 even
+# root cannot relax that (authorizationdb write returns -60005), so this
+# cannot be done over SSH. Trust survives reboots; only a re-image loses it.
+ca_crt="$HOMEBREW_PREFIX/etc/squid/squid-self-signed.crt"
+if ca_trusted "$ca_crt"; then
+    ok "Squid CA is trusted in the System keychain"
+else
+    warn "the Squid CA is not trusted in the System keychain; jobs will fail with UntrustedRoot"
+    warn "on the runner's screen (Screen Sharing), run in Terminal and confirm the dialog:"
+    warn "  sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $ca_crt"
+fi
 true

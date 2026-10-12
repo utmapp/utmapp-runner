@@ -38,7 +38,7 @@ ones, unless you pass `--no-restore`:
 | From the backup | Effect |
 | --- | --- |
 | SSH host keys | the machine keeps its identity; `bootstrap.sh` updates your `known_hosts` after the `system` step |
-| Squid CA | same CA as before (anything that trusted it still does) |
+| Squid CA | same CA as before, so clients outside the machine that trusted it still do; the runner's own keychain must trust it again (see below) |
 | runner registrations | `macstadium-N` reconnect as the same runners, **no registration token needed** |
 | automatic login password | used as the `runner` password when the backup's machine logged in as `runner` |
 
@@ -97,6 +97,20 @@ pass `--reboot`/`--no-reboot`.
 > (default `/Applications/Xcode_26.0.app`). Xcode is installed as
 > `/Applications/Xcode_<version>.app`, so update that variable in the
 > `utmapp` organization or repository settings when the version changes.
+
+> [!IMPORTANT]
+> The runner (.NET), `URLSession`, SwiftPM and `xcodebuild` check certificates
+> against the keychain, not `SSL_CERT_FILE`, so the Squid CA must be a trusted
+> root in the System keychain or jobs fail with `UntrustedRoot`. macOS only
+> allows that with an on-screen confirmation, so after a re-image do it once
+> over Screen Sharing, in Terminal:
+>
+> ```sh
+> sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain \
+>     /opt/homebrew/etc/squid/squid-self-signed.crt
+> ```
+>
+> The squid step and `verify` report whether it is trusted.
 
 ## Running individual steps
 

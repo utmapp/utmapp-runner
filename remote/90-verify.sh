@@ -38,6 +38,7 @@ check "bumped HTTPS through the proxy (CA bundle)" \
     curl -fsS -o /dev/null --max-time 30 --proxy "http://$SQUID_PROXY_HOST:$SQUID_PROXY_PORT" --cacert "$SQUID_CA_BUNDLE" https://www.apple.com/
 check "spliced HTTPS through the proxy (github.com)" \
     curl -fsS -o /dev/null --max-time 30 --proxy "http://$SQUID_PROXY_HOST:$SQUID_PROXY_PORT" --cacert "$SQUID_CA_BUNDLE" https://github.com/
+check "Squid CA trusted in the System keychain" ca_trusted "$HOMEBREW_PREFIX/etc/squid/squid-self-signed.crt"
 info "CA: $(openssl x509 -in "$SQUID_CA_PEM" -noout -subject -enddate 2>/dev/null | tr '\n' ' ')"
 
 step "Xcode"

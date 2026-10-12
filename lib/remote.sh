@@ -92,3 +92,13 @@ autologin_works() {
         && sudo test -f /etc/kcpassword \
         && dscl . -authonly "$user" "$(sudo cat /etc/kcpassword | kcpassword_decode)" >/dev/null 2>&1
 }
+
+# ca_trusted <cert>: <cert> is in the System keychain and has admin trust
+# settings, which is what add-trusted-cert -d -r trustRoot creates.
+ca_trusted() {
+    local sha cn
+    sha="$(openssl x509 -in "$1" -noout -fingerprint -sha256 | sed 's/.*=//; s/://g')"
+    cn="$(openssl x509 -in "$1" -noout -subject -nameopt multiline | awk -F' = ' '/commonName/ {print $2; exit}')"
+    security find-certificate -a -Z /Library/Keychains/System.keychain 2>/dev/null | grep -qix "SHA-256 hash: $sha" \
+        && security dump-trust-settings -d 2>/dev/null | grep -qF "$cn"
+}
