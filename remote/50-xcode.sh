@@ -151,6 +151,14 @@ for component in $XCODE_COMPONENTS; do
     fi
 done
 
+# xcrun caches tool paths per DEVELOPER_DIR and doesn't notice components added
+# later, so a lookup made before the Metal toolchain arrived keeps returning
+# Xcode's stub ("missing Metal Toolchain"). Drop the runner user's cache.
+if [ -n "$RUNNER_UID" ]; then
+    as_runner /bin/sh -c 'rm -f "$(getconf DARWIN_USER_TEMP_DIR)/xcrun_db"'
+    ok "cleared $RUNNER_USER's xcrun cache"
+fi
+
 if [ -n "$xip" ] && is_true "$XCODE_DELETE_XIP"; then
     rm -f "$xip" 2>/dev/null || sudo rm -f "$xip"
     ok "Xcode installed; deleted $xip"

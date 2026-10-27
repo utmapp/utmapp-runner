@@ -64,7 +64,7 @@ re-image generates a new CA. The runners find it through the paths in their
 | `~runner/actions/runner-N/` | runner N (`config.sh --unattended --replace`, work dir `_work`) |
 | `~runner/actions/runner-N/.env` | `files/runner/runner.env` (below) |
 | `~runner/actions/runner-N/.path` | `PATH` for the service: Homebrew first, then the system paths |
-| `~runner/actions/cleanup.sh` | `ACTIONS_RUNNER_HOOK_JOB_STARTED` / `_COMPLETED`: empties `$GITHUB_WORKSPACE` before and after each job, and removes the DerivedData folders of projects inside it |
+| `~runner/actions/cleanup.sh` | `ACTIONS_RUNNER_HOOK_JOB_STARTED` / `_COMPLETED`: empties `$GITHUB_WORKSPACE` before and after each job, removes the DerivedData folders of projects inside it, and clears the runner user's xcrun cache (`xcrun_db`) |
 | `~runner/Library/Logs/actions.runner.*/` | service stdout/stderr |
 
 Runners are registered to `GITHUB_URL` (`https://github.com/utmapp`) in
@@ -112,6 +112,7 @@ not in it: `squid-patch` builds and pins its own formula.
 - `/Applications/Xcode_<version>.app`, selected with `xcode-select`, license accepted, `-runFirstLaunch` done.
 - Simulator runtimes for `XCODE_PLATFORMS` (iOS, visionOS): `xcodebuild -downloadPlatform`.
 - `XCODE_COMPONENTS` (MetalToolchain, needed since Xcode 26): `xcodebuild -downloadComponent`.
+- The runner user's xcrun cache is cleared afterwards. A lookup cached before the Metal toolchain was installed keeps resolving to Xcode's `metal` stub, which fails with "missing Metal Toolchain".
 - `build.yml` uses `vars.HOST_XCODE_PATH`; keep that variable pointing at the installed app.
 
 Apple has no unattended Xcode download (developer.apple.com needs an Apple ID

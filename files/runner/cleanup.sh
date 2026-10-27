@@ -8,7 +8,7 @@
 # them after the project's path, so every runner x platform x dependency gets its
 # own, and a fresh checkout never reuses them. The shared module caches
 # (ModuleCache.noindex etc.) have no WorkspacePath and are left alone; other
-# runners' folders are never under this workspace.
+# runners' folders are never under this workspace. Finally, clear xcrun's cache.
 
 [ -n "$GITHUB_WORKSPACE" ] || exit 0
 
@@ -29,4 +29,8 @@ for dir in "$derived"/*/; do
             ;;
     esac
 done
+
+# Also drop xcrun's lookup cache, which can pin a tool to a stale path (e.g.
+# Xcode's metal stub from before the Metal toolchain was installed).
+rm -f "$(getconf DARWIN_USER_TEMP_DIR)/xcrun_db"
 exit 0
