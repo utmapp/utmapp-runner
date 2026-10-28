@@ -64,6 +64,10 @@ done
 for g in $RUNNER_GEMS; do
     check "gem: $g" as_runner /usr/bin/gem list -i "$g"
 done
+check "$RUNNER_USER can write Homebrew locks" sh -c "ls -led '$HOMEBREW_PREFIX/var/homebrew/locks' | grep -qE '^ *[0-9]+: user:$RUNNER_USER allow '"
+for f in llvm spirv-llvm-translator libxcb libxrandr; do
+    check "$RUNNER_USER: brew --prefix $f" as_runner env HOMEBREW_NO_AUTO_UPDATE=1 "$HOMEBREW_PREFIX/bin/brew" --prefix "$f"
+done
 
 step "Actions runners"
 i=1

@@ -76,6 +76,30 @@ as_runner git config --global http.postBuffer "$RUNNER_GIT_POSTBUFFER"
 as_runner git config --global http.sslVerify "$RUNNER_GIT_SSLVERIFY"
 ok "$(as_runner git config --global --list | tr '\n' ' ')"
 
+# ---------------------------------------------------------------- homebrew --
+# UTM's build_dependencies.sh runs "brew --prefix <formula>". With no API cache
+# of its own, the runner's brew downloads one, and first takes a lock file in
+# the admin-owned locks directory: without write access there it fails, and the
+# script reports the formula as not installed. Lock files are created, flocked
+# and unlinked by whichever user runs brew, so the inherited entries keep every
+# lock file usable by both the runner and the admin group.
+step "Runner access to Homebrew locks"
+locks="$HOMEBREW_PREFIX/var/homebrew/locks"
+mkdir -p "$locks"
+lock_perms="read,write,append,execute,delete,delete_child,readattr,writeattr,readextattr,writeextattr,readsecurity"
+for who in "user:$RUNNER_USER" "group:admin"; do
+    if ! ls -led "$locks" | grep -qE "^ *[0-9]+: $who allow "; then
+        sudo chmod +a "$who allow $lock_perms,file_inherit,directory_inherit" "$locks"
+    fi
+    # Lock files that existed before the entries above were added.
+    find "$locks" -mindepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+        ls -le "$f" | grep -q " $who " || sudo chmod +a "$who allow read,write,append,delete,readattr,writeattr,readextattr,writeextattr,readsecurity" "$f"
+    done
+done
+as_runner env HOMEBREW_NO_AUTO_UPDATE=1 "$HOMEBREW_PREFIX/bin/brew" --prefix llvm >/dev/null \
+    || die "$RUNNER_USER still cannot run \"brew --prefix llvm\""
+ok "$locks"
+
 # ---------------------------------------------------------------- packages --
 step "Runner Python packages"
 if [ -n "$RUNNER_PIP_PACKAGES" ]; then
