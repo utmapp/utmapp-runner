@@ -58,6 +58,8 @@ if [ -n "$AUTOLOGIN_USER" ]; then
     check "automatic login is $AUTOLOGIN_USER (with its current password)" autologin_works "$AUTOLOGIN_USER"
 fi
 check "$RUNNER_USER has a GUI session" sudo launchctl print "gui/$RUNNER_UID"
+check "$RUNNER_USER: screen saver never starts" sh -c "test \"\$(sudo -u '$RUNNER_USER' -H defaults -currentHost read com.apple.screensaver idleTime)\" = 0"
+check "$RUNNER_USER: screen lock off" screen_lock_off
 for m in $RUNNER_PIP_PACKAGES; do
     check "python: $m" as_runner "$HOMEBREW_PREFIX/bin/python3" -m pip show "$m"
 done

@@ -102,3 +102,9 @@ ca_trusted() {
     security find-certificate -a -Z /Library/Keychains/System.keychain 2>/dev/null | grep -qix "SHA-256 hash: $sha" \
         && security dump-trust-settings -d 2>/dev/null | grep -qF "$cn"
 }
+
+# screen_lock_off: RUNNER_USER's session does not lock when the screen saver
+# starts or the display sleeps. sysadminctl reports this on stderr.
+screen_lock_off() {
+    as_runner sysadminctl -screenLock status 2>&1 | grep -q "screenLock is off"
+}

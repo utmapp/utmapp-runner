@@ -61,6 +61,28 @@ else
     ok "$AUTOLOGIN_USER (takes effect at the next boot)"
 fi
 
+# ----------------------------------------------------------- screen lock --
+# Nobody is at the screen, and a locked session gets in the way of Screen
+# Sharing and of UI tests. The display never sleeps (10-system.sh), so with no
+# screen saver either, nothing would start the lock; turn the lock off as well
+# in case either comes back.
+step "Runner screen saver and lock"
+as_runner defaults -currentHost write com.apple.screensaver idleTime -int 0
+lock_password="$runner_password"
+if [ -z "$lock_password" ] && [ "$AUTOLOGIN_USER" = "$RUNNER_USER" ] && sudo test -f /etc/kcpassword; then
+    lock_password="$(sudo cat /etc/kcpassword | kcpassword_decode)"
+fi
+if screen_lock_off; then
+    ok "screen saver never, screen lock already off"
+elif [ -n "$lock_password" ] && dscl . -authonly "$RUNNER_USER" "$lock_password" >/dev/null 2>&1; then
+    # Changing it needs the account's own password, even from root.
+    as_runner sysadminctl -screenLock off -password "$lock_password" >/dev/null 2>&1 || true
+    screen_lock_off || die "the screen lock for $RUNNER_USER is still on"
+    ok "screen saver never, screen lock off"
+else
+    warn "screen saver never; the screen lock needs $RUNNER_USER's password: rerun with RUNNER_USER_PASSWORD set"
+fi
+
 # -------------------------------------------------------------------- shell --
 step "Runner shell and proxy settings"
 as_runner mkdir -p "$RUNNER_HOME/bin" "$RUNNER_HOME/.gitcache" "$RUNNER_HOME/Library/LaunchAgents" "$RUNNER_HOME/Library/Logs"

@@ -131,5 +131,6 @@ deleted once the whole xcode step has succeeded.
 | Software update | automatic check/download/install, critical updates | `SOFTWARE_UPDATE_*` |
 | Screen sharing | on | `SCREEN_SHARING` |
 | Guest account | off | always |
+| Runner screen saver and lock | screen saver never, lock off (`sysadminctl -screenLock off`, needs the `runner` password) | always |
 | sshd | `/etc/ssh/sshd_config.d/010-ci-runner.conf`: no passwords, no keyboard-interactive, no root | `SSH_DISABLE_PASSWORD_AUTH` |
 | Firewall | off (macOS default, left alone) | — |
