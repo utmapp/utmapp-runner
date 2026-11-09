@@ -108,3 +108,9 @@ ca_trusted() {
 screen_lock_off() {
     as_runner sysadminctl -screenLock status 2>&1 | grep -q "screenLock is off"
 }
+
+# automation_mode_unauthenticated: Automation Mode (for UI tests) can be turned
+# on without a password.
+automation_mode_unauthenticated() {
+    automationmodetool 2>&1 | grep -q "DOES NOT REQUIRE user authentication"
+}

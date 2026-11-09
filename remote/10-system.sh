@@ -34,6 +34,19 @@ sudo defaults write "$SU" CriticalUpdateInstall -bool "$(bool "$SOFTWARE_UPDATE_
 sudo defaults write "$SU" ConfigDataInstall -bool "$(bool "$SOFTWARE_UPDATE_CRITICAL")"
 ok "download=$SOFTWARE_UPDATE_AUTO_DOWNLOAD install-macos=$SOFTWARE_UPDATE_AUTO_INSTALL_MACOS critical=$SOFTWARE_UPDATE_CRITICAL"
 
+# --------------------------------------------------------- automation mode --
+# UI tests turn on Automation Mode, which by default asks for a password that
+# nobody is there to type. automationmodetool asks for root's password even
+# under sudo; root has none, so an empty line answers it.
+step "Automation Mode"
+if automation_mode_unauthenticated; then
+    ok "already allowed without authentication"
+else
+    printf '\n' | sudo automationmodetool enable-automationmode-without-authentication >/dev/null 2>&1 || true
+    automation_mode_unauthenticated || die "Automation Mode still requires authentication"
+    ok "allowed without authentication"
+fi
+
 # ---------------------------------------------------------- remote access --
 step "Guest account"
 sudo sysadminctl -guestAccount off >/dev/null 2>&1 || true

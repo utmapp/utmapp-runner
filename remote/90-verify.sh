@@ -23,6 +23,7 @@ step "System"
 info "$(sw_vers -productName) $(sw_vers -productVersion) ($(sw_vers -buildVersion))"
 check "passwordless sudo for $(id -un)" sudo -n true
 check "sudoers valid" sudo /usr/sbin/visudo -c
+check "Automation Mode needs no authentication" automation_mode_unauthenticated
 check "never sleeps" sh -c "pmset -g | grep -qE '^ sleep +0'"
 if is_true "$SSH_DISABLE_PASSWORD_AUTH"; then
     check "sshd refuses passwords" sh -c "sudo sshd -T | grep -qx 'passwordauthentication no'"
